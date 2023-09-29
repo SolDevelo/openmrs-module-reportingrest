@@ -9,6 +9,8 @@
  */
 package org.openmrs.module.reportingrest.web.resource;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +23,7 @@ import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameterizable;
 import org.openmrs.module.reporting.report.ReportRequest;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
+import org.openmrs.module.reporting.report.renderer.RenderingMode;
 import org.openmrs.module.reporting.report.service.ReportService;
 import org.openmrs.module.reportingrest.web.controller.ReportingRestController;
 import org.openmrs.module.webservices.rest.web.ConversionUtil;
@@ -29,6 +32,7 @@ import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.annotation.Resource;
 import org.openmrs.module.webservices.rest.web.representation.DefaultRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.FullRepresentation;
+import org.openmrs.module.webservices.rest.web.representation.RefRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
 import org.openmrs.module.webservices.rest.web.resource.impl.BaseDelegatingResource;
@@ -37,12 +41,13 @@ import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceD
 import org.openmrs.module.webservices.rest.web.resource.impl.NeedsPaging;
 import org.openmrs.module.webservices.rest.web.response.ResponseException;
 import org.openmrs.module.webservices.rest.web.response.ConversionException;
+import org.openmrs.util.OpenmrsUtil;
 
 /**
  * {@link Resource} for {@link ReportRequest}s, supporting standard CRUD operations
  */
 @Resource(name = RestConstants.VERSION_1 + ReportingRestController.REPORTING_REST_NAMESPACE + "/reportRequest",
-        supportedClass = ReportRequest.class, supportedOpenmrsVersions = {"1.8.*", "1.9.*, 1.10.*, 1.11.*", "1.12.*", "2.0.*", "2.1.*", "2.2.*", "2.3.*", "2.4.*"})
+        supportedClass = ReportRequest.class, supportedOpenmrsVersions = {"1.8.* - 9.9.*"})
 public class ReportRequestResource extends DelegatingCrudResource<ReportRequest> {
 
 	/**
@@ -60,9 +65,43 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 	public ReportRequest getByUniqueId(String uuid) {
 		return getService().getReportRequestByUuid(uuid);
 	}
-	
+
 	@Override
 	protected PageableResult doSearch(RequestContext context) {
+		String statusesGroup = context.getParameter("statusesGroup");
+		if (StringUtils.isNotBlank(statusesGroup)) {
+			List<ReportRequest.Status> statuses = new ArrayList<ReportRequest.Status>();
+			if (StringUtils.equalsIgnoreCase(statusesGroup, "ran")) {
+				Collections.addAll(
+						statuses,
+						ReportRequest.Status.COMPLETED,
+						ReportRequest.Status.SAVED,
+						ReportRequest.Status.FAILED,
+						ReportRequest.Status.PROCESSING);
+			} else if (StringUtils.equalsIgnoreCase(statusesGroup, "processing")) {
+				Collections.addAll(statuses, ReportRequest.Status.REQUESTED, ReportRequest.Status.PROCESSING);
+			}
+
+			ReportService reportService = getService();
+			List<ReportRequest> reportRequests =
+					reportService.getReportRequests(
+							null, null, null, statuses.toArray(new ReportRequest.Status[0]));
+			Collections.sort(reportRequests, new ReportRequest.PriorityComparator());
+			Collections.reverse(reportRequests);
+
+			for (ReportRequest reportRequest : reportRequests) {
+				for (RenderingMode mode :
+						reportService.getRenderingModes(
+								reportRequest.getReportDefinition().getParameterizable())) {
+					if (OpenmrsUtil.nullSafeEquals(mode, reportRequest.getRenderingMode())) {
+						reportRequest.setRenderingMode(mode);
+					}
+				}
+			}
+
+			return new NeedsPaging<ReportRequest>(reportRequests, context);
+		}
+
 		String reportDefinitionParam = context.getParameter("reportDefinition");
 		if (StringUtils.isEmpty(reportDefinitionParam)) {
 			throw new IllegalArgumentException("reportDefinition is required");
@@ -123,7 +162,8 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			description = new DelegatingResourceDescription();
 			description.addProperty("uuid");
 			//description.addProperty("baseCohort", Representation.DEFAULT);  TODO: Figure out how to support this
-			//description.addProperty("reportDefinition", Representation.DEFAULT);  TODO: Figure out how to support this
+			description.addProperty("parameterizable", "reportDefinition.parameterizable",
+					Representation.DEFAULT);
 			description.addProperty("renderingMode");
 			description.addProperty("priority");
 			description.addProperty("schedule");
@@ -136,12 +176,12 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			description.addProperty("description");
 			description.addSelfLink();
 			description.addLink("full", ".?v=" + RestConstants.REPRESENTATION_FULL);
-		}
-		else if (rep instanceof FullRepresentation) {
+		} else if (rep instanceof FullRepresentation) {
 			description = new DelegatingResourceDescription();
 			description.addProperty("uuid");
 			//description.addProperty("baseCohort", Representation.DEFAULT);  TODO: Figure out how to support this
-			//description.addProperty("reportDefinition", Representation.DEFAULT);  TODO: Figure out how to support this
+			description.addProperty("parameterizable", "reportDefinition.parameterizable",
+					Representation.DEFAULT);
 			description.addProperty("renderingMode");
 			description.addProperty("priority");
 			description.addProperty("schedule");
@@ -153,6 +193,26 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			description.addProperty("renderCompleteDatetime");
 			description.addProperty("description");
 			description.addSelfLink();
+		} else if (rep instanceof RefRepresentation) {
+			description = new DelegatingResourceDescription();
+			description.addProperty("uuid");
+			//description.addProperty("baseCohort", Representation.DEFAULT);  TODO: Figure out how to support this
+			description.addProperty("parameterizable", "reportDefinition.parameterizable",
+					Representation.DEFAULT);
+			description.addProperty("parameterMappings", "reportDefinition.parameterMappings",
+					Representation.DEFAULT);
+			description.addProperty("renderingMode");
+			description.addProperty("priority");
+			description.addProperty("schedule");
+			description.addProperty("requestedBy", Representation.DEFAULT);
+			description.addProperty("requestDate");
+			description.addProperty("status");
+			description.addProperty("evaluateStartDatetime");
+			description.addProperty("evaluateCompleteDatetime");
+			description.addProperty("renderCompleteDatetime");
+			description.addProperty("description");
+			description.addSelfLink();
+			description.addLink("full", ".?v=" + RestConstants.REPRESENTATION_FULL);
 		}
 		return description;
 	}
