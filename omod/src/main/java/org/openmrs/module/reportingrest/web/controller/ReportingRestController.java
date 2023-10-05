@@ -22,6 +22,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.reporting.cohort.definition.CohortDefinition;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameter;
+import org.openmrs.module.reporting.report.Report;
 import org.openmrs.module.reporting.report.ReportRequest;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.definition.service.ReportDefinitionService;
@@ -72,7 +73,7 @@ public class ReportingRestController extends MainResourceController {
         ReportDefinition reportDefinition = Context.getService(ReportDefinitionService.class)
             .getDefinitionByUuid(reportDefinitionUuid);
 
-        ReportService reportService = Context.getService(ReportService.class);
+        ReportService reportService = getReportService();
 
         Map<String, Object> parameterValues = new HashMap<String, Object>();
         for (Parameter parameter : reportDefinition.getParameters()) {
@@ -101,10 +102,21 @@ public class ReportingRestController extends MainResourceController {
     @RequestMapping(value = "/cancelReport", method = RequestMethod.DELETE)
     @ResponseStatus(HttpStatus.OK)
     public void cancelReport(@RequestParam String reportRequestUuid) {
-        ReportService reportService = Context.getService(ReportService.class);
+        ReportService reportService = getReportService();
         ReportRequest reportRequest = reportService.getReportRequestByUuid(reportRequestUuid);
         if (reportRequest != null) {
             reportService.purgeReportRequest(reportRequest);
+        }
+    }
+
+    @RequestMapping(value = "/preserveReport", method = RequestMethod.POST)
+    @ResponseStatus(HttpStatus.OK)
+    public void preserveReport(@RequestParam String reportRequestUuid) {
+        ReportService reportService = getReportService();
+        ReportRequest reportRequest = reportService.getReportRequestByUuid(reportRequestUuid);
+        if (ReportRequest.Status.COMPLETED.equals(reportRequest.getStatus())) {
+            Report report = reportService.loadReport(reportRequest);
+            reportService.saveReport(report, StringUtils.EMPTY);
         }
     }
 
@@ -128,5 +140,9 @@ public class ReportingRestController extends MainResourceController {
         }
 
         return convertedObject;
+    }
+
+    private ReportService getReportService() {
+        return Context.getService(ReportService.class);
     }
 }
