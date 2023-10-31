@@ -30,11 +30,11 @@
         <serializationxstreamVersion>0.2.7</serializationxstreamVersion>
         <calculationVersion>1.0</calculationVersion>
         <openmrsTestutilsVersion>1.1</openmrsTestutilsVersion>
+        <uiframeworkModuleVersion>3.2</uiframeworkModuleVersion>
     </properties>
 
     <dependencyManagement>
 		<dependencies>
-			
 			<dependency>
 				<groupId>org.openmrs.api</groupId>
 				<artifactId>openmrs-api</artifactId>
@@ -75,6 +75,12 @@
                 <artifactId>hamcrest-all</artifactId>
                 <version>1.3</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.openmrs.module</groupId>
+                <artifactId>uiframework-api</artifactId>
+                <version>${uiframeworkModuleVersion}</version>
+                <scope>provided</scope>
             </dependency>
 		</dependencies>
 	</dependencyManagement>

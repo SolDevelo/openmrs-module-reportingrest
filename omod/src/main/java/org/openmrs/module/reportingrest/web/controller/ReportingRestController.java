@@ -28,17 +28,23 @@ import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.definition.service.ReportDefinitionService;
 import org.openmrs.module.reporting.report.renderer.RenderingMode;
 import org.openmrs.module.reporting.report.service.ReportService;
+import org.openmrs.module.reporting.web.renderers.WebReportRenderer;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.v1_0.controller.MainResourceController;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.openmrs.ui.framework.page.FileDownload;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -117,6 +123,46 @@ public class ReportingRestController extends MainResourceController {
         if (ReportRequest.Status.COMPLETED.equals(reportRequest.getStatus())) {
             Report report = reportService.loadReport(reportRequest);
             reportService.saveReport(report, StringUtils.EMPTY);
+        }
+    }
+
+    @RequestMapping(value = "/downloadReport", method = RequestMethod.GET)
+    @ResponseStatus(HttpStatus.OK)
+    public FileDownload downloadReport(@RequestParam String reportRequestUuid) {
+        return processAndDownloadReport(reportRequestUuid, getReportService());
+    }
+
+    @RequestMapping(value = "/downloadMultipleReports", method = RequestMethod.GET)
+    @ResponseStatus(HttpStatus.OK)
+    public List<FileDownload> downloadMultipleReports(@RequestParam String reportRequestUuids) {
+        List<FileDownload> fileDownloadList = new ArrayList<FileDownload>();
+        ReportService reportService = getReportService();
+        for (String reportRequestUuid : reportRequestUuids.split(",")) {
+            fileDownloadList.add(processAndDownloadReport(reportRequestUuid, reportService));
+        }
+
+        return fileDownloadList;
+    }
+
+    private FileDownload processAndDownloadReport(String reportRequestUuid, ReportService reportService) {
+        ReportRequest reportRequest = reportService.getReportRequestByUuid(reportRequestUuid);
+        if (reportRequest == null) {
+            throw new IllegalArgumentException("Report request not found");
+        }
+
+        RenderingMode renderingMode = reportRequest.getRenderingMode();
+        if (renderingMode.getRenderer() instanceof WebReportRenderer) {
+            throw new IllegalStateException("Web Renderers not implemented yet");
+        }
+
+        String fileName = renderingMode.getRenderer().getFilename(reportRequest).replace(" ", "_");
+        String contentType = renderingMode.getRenderer().getRenderedContentType(reportRequest);
+        byte[] fileContent = reportService.loadRenderedOutput(reportRequest);
+
+        if (fileContent == null) {
+            throw new IllegalStateException("Error during loading rendered output");
+        } else {
+            return new FileDownload(fileName, contentType, fileContent);
         }
     }
 

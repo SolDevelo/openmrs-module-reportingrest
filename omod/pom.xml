@@ -11,7 +11,6 @@
 	<description>OpenMRS module project for reportingrest</description>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>webservices.rest-omod-common</artifactId>
@@ -26,7 +25,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
         <dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>webservices.rest-omod-1.8</artifactId>
@@ -34,13 +32,11 @@
 			<type>jar</type>
 			<scope>provided</scope>
 		</dependency>
-	
 		<dependency>
 			<groupId>org.openmrs.module</groupId>
 			<artifactId>reportingrest-api</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
-
 		<dependency>
 			<groupId>org.openmrs.api</groupId>
 			<artifactId>openmrs-api</artifactId>
@@ -66,11 +62,14 @@
 			<artifactId>openmrs-test</artifactId>
 			<type>pom</type>
 		</dependency>
-
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-all</artifactId>
             <scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openmrs.module</groupId>
+			<artifactId>uiframework-api</artifactId>
 		</dependency>
 	</dependencies>
 
