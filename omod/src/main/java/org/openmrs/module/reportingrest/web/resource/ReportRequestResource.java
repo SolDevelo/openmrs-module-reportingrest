@@ -185,6 +185,8 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			//description.addProperty("baseCohort", Representation.DEFAULT);  TODO: Figure out how to support this
 			description.addProperty("parameterizable", "reportDefinition.parameterizable",
 					Representation.DEFAULT);
+			description.addProperty("parameterMappings", "reportDefinition.parameterMappings",
+					Representation.DEFAULT);
 			description.addProperty("renderingMode");
 			description.addProperty("priority");
 			description.addProperty("schedule");
@@ -202,6 +204,8 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			description.addProperty("uuid");
 			//description.addProperty("baseCohort", Representation.DEFAULT);  TODO: Figure out how to support this
 			description.addProperty("parameterizable", "reportDefinition.parameterizable",
+					Representation.DEFAULT);
+			description.addProperty("parameterMappings", "reportDefinition.parameterMappings",
 					Representation.DEFAULT);
 			description.addProperty("renderingMode");
 			description.addProperty("priority");

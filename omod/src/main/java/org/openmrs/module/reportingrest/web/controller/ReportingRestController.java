@@ -29,19 +29,17 @@ import org.openmrs.module.reporting.report.definition.service.ReportDefinitionSe
 import org.openmrs.module.reporting.report.renderer.RenderingMode;
 import org.openmrs.module.reporting.report.service.ReportService;
 import org.openmrs.module.reporting.web.renderers.WebReportRenderer;
+import org.openmrs.module.reportingrest.web.wrapper.RunReportRequest;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.v1_0.controller.MainResourceController;
-import org.springframework.http.HttpHeaders;
+import org.openmrs.ui.framework.page.FileDownload;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.openmrs.ui.framework.page.FileDownload;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -71,35 +69,38 @@ public class ReportingRestController extends MainResourceController {
 
     @RequestMapping(value = "/runReport", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.OK)
-    public void runReport(@RequestBody Map<String, Object> body) {
-        String reportDefinitionUuid = (String) body.get("reportDefinitionUuid");
-        String renderModeUuid = (String) body.get("renderModeUuid");
-        Map<String, Object> reportParameters = (Map<String, Object>) body.get("reportParameters");
-
+    public void runReport(@RequestBody RunReportRequest runReportRequest) {
         ReportDefinition reportDefinition = Context.getService(ReportDefinitionService.class)
-            .getDefinitionByUuid(reportDefinitionUuid);
+            .getDefinitionByUuid(runReportRequest.getReportDefinitionUuid());
 
         ReportService reportService = getReportService();
 
         Map<String, Object> parameterValues = new HashMap<String, Object>();
         for (Parameter parameter : reportDefinition.getParameters()) {
             Object convertedObj =
-                convertParamValueToObject(reportParameters.get(parameter.getName()), parameter.getType());
+                convertParamValueToObject(runReportRequest.getReportParameters().get(parameter.getName()), parameter.getType());
             parameterValues.put(parameter.getName(), convertedObj);
         }
 
         List<RenderingMode> renderingModes = reportService.getRenderingModes(reportDefinition);
         RenderingMode renderingMode = null;
         for (RenderingMode mode : renderingModes) {
-            if (StringUtils.equals(mode.getArgument(), renderModeUuid)) {
+            if (StringUtils.equals(mode.getArgument(), runReportRequest.getRenderModeUuid())) {
                 renderingMode = mode;
                 break;
             }
         }
 
-        ReportRequest reportRequest = new ReportRequest();
+        final ReportRequest reportRequest;
+        if(StringUtils.isNotBlank(runReportRequest.getExistingRequestUuid())) {
+            reportRequest = reportService.getReportRequestByUuid(runReportRequest.getExistingRequestUuid());
+        } else {
+            reportRequest = new ReportRequest();
+        }
         reportRequest.setReportDefinition(new Mapped<ReportDefinition>(reportDefinition, parameterValues));
         reportRequest.setRenderingMode(renderingMode);
+        reportRequest.setPriority(ReportRequest.Priority.NORMAL);
+        reportRequest.setSchedule(runReportRequest.getSchedule());
 
         reportService.queueReport(reportRequest);
         reportService.processNextQueuedReports();
