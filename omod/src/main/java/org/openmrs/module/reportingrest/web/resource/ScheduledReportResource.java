@@ -22,9 +22,9 @@ import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.module.webservices.rest.web.annotation.Resource;
 import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
+import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingCrudResource;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
-import org.openmrs.module.webservices.rest.web.resource.impl.NeedsPaging;
 import org.openmrs.module.webservices.rest.web.response.ResourceDoesNotSupportOperationException;
 import org.openmrs.module.webservices.rest.web.response.ResponseException;
 
@@ -75,7 +75,7 @@ public class ScheduledReportResource extends DelegatingCrudResource<ScheduledRep
     final List<ReportDefinition> reportDefinitions = getSortedReportDefinitions(context);
     final List<ScheduledReport> scheduledReports = mergeScheduledReports(reportDefinitions);
 
-    return new NeedsPaging<ScheduledReport>(scheduledReports, context);
+    return new AlreadyPaged<ScheduledReport>(context, scheduledReports, false);
   }
 
   @Override

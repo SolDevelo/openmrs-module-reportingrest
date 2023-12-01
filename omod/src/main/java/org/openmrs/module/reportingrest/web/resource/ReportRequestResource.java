@@ -30,10 +30,10 @@ import org.openmrs.module.webservices.rest.web.representation.FullRepresentation
 import org.openmrs.module.webservices.rest.web.representation.RefRepresentation;
 import org.openmrs.module.webservices.rest.web.representation.Representation;
 import org.openmrs.module.webservices.rest.web.resource.api.PageableResult;
+import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.resource.impl.BaseDelegatingResource;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingCrudResource;
 import org.openmrs.module.webservices.rest.web.resource.impl.DelegatingResourceDescription;
-import org.openmrs.module.webservices.rest.web.resource.impl.NeedsPaging;
 import org.openmrs.module.webservices.rest.web.response.ConversionException;
 import org.openmrs.module.webservices.rest.web.response.ResponseException;
 import org.openmrs.util.OpenmrsUtil;
@@ -120,7 +120,7 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 				}
 			}
 
-			return new NeedsPaging<ReportRequest>(reportRequests, context);
+			return new AlreadyPaged<ReportRequest>(context, reportRequests, false);
 		}
 
 		String reportDefinitionParam = context.getParameter("reportDefinition");
@@ -132,7 +132,7 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			throw new NullPointerException("Cannot find reportDefinition=" + reportDefinitionParam);
 		}
 		List<ReportRequest> reportRequests = getService().getReportRequests(reportDefinition, null, null);
-		return new NeedsPaging<ReportRequest>(reportRequests, context);
+		return new AlreadyPaged<ReportRequest>(context, reportRequests, false);
 	}
 
 	/**
