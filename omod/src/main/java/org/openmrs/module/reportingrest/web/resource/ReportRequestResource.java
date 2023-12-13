@@ -75,6 +75,7 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 			if (StringUtils.equalsIgnoreCase(statusesGroup, "ran")) {
 				Collections.addAll(
 						statuses,
+						ReportRequest.Status.REQUESTED,
 						ReportRequest.Status.COMPLETED,
 						ReportRequest.Status.SAVED,
 						ReportRequest.Status.FAILED,
