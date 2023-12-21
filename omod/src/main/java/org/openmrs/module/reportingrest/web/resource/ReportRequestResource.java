@@ -17,6 +17,7 @@ import org.openmrs.module.reporting.definition.DefinitionContext;
 import org.openmrs.module.reporting.evaluation.parameter.Mapped;
 import org.openmrs.module.reporting.evaluation.parameter.Parameterizable;
 import org.openmrs.module.reporting.report.ReportRequest;
+import org.openmrs.module.reporting.report.ReportRequestDTO;
 import org.openmrs.module.reporting.report.definition.ReportDefinition;
 import org.openmrs.module.reporting.report.renderer.RenderingMode;
 import org.openmrs.module.reporting.report.service.ReportService;
@@ -88,14 +89,15 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 						ReportRequest.Status.SCHEDULED,
 						ReportRequest.Status.SCHEDULE_COMPLETED);
 			}
-
 			ReportService reportService = getService();
-			List<ReportRequest> reportRequests =
-					reportService.getReportRequests(
-							null, null, null, statuses.toArray(new ReportRequest.Status[0]));
+			Integer pageNumber = context.getStartIndex();
+			Integer pageSize = context.getLimit();
+			ReportRequestDTO reportRequestsDTO = reportService.getReportsWithPagination(
+					null, null, null, pageNumber, pageSize, statuses.toArray(new ReportRequest.Status[0]));
+			List<ReportRequest> reportRequests = reportRequestsDTO.getReportRequests();
 
 			String sortByParameter = context.getParameter("sortBy");
-			if(StringUtils.isBlank(sortByParameter) || "priority".equals(sortByParameter)) {
+			if (StringUtils.isBlank(sortByParameter) || "priority".equals(sortByParameter)) {
 				Collections.sort(reportRequests, new ReportRequest.PriorityComparator());
 				Collections.reverse(reportRequests);
 			} else if("name".equals(sortByParameter)) {
@@ -121,18 +123,21 @@ public class ReportRequestResource extends DelegatingCrudResource<ReportRequest>
 				}
 			}
 
-			return new AlreadyPaged<ReportRequest>(context, reportRequests, false);
+			return new AlreadyPaged<ReportRequest>(context, reportRequests, reportRequestsDTO.getReportRequestCount() > (long) pageNumber * pageSize, reportRequestsDTO.getReportRequestCount());
 		}
 
 		String reportDefinitionParam = context.getParameter("reportDefinition");
 		if (StringUtils.isEmpty(reportDefinitionParam)) {
 			throw new IllegalArgumentException("reportDefinition is required");
 		}
+
 		ReportDefinition reportDefinition = DefinitionContext.getDefinitionByUuid(ReportDefinition.class, reportDefinitionParam);
 		if (reportDefinition == null) {
 			throw new NullPointerException("Cannot find reportDefinition=" + reportDefinitionParam);
 		}
+
 		List<ReportRequest> reportRequests = getService().getReportRequests(reportDefinition, null, null);
+
 		return new AlreadyPaged<ReportRequest>(context, reportRequests, false);
 	}
 

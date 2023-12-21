@@ -31,6 +31,7 @@ import org.openmrs.module.reporting.report.service.ReportService;
 import org.openmrs.module.reporting.web.renderers.WebReportRenderer;
 import org.openmrs.module.reportingrest.web.wrapper.RunReportRequest;
 import org.openmrs.module.webservices.rest.web.RestConstants;
+import org.openmrs.module.webservices.rest.web.resource.impl.AlreadyPaged;
 import org.openmrs.module.webservices.rest.web.v1_0.controller.MainResourceController;
 import org.openmrs.ui.framework.page.FileDownload;
 import org.springframework.http.HttpStatus;
